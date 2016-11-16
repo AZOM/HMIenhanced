@@ -1,7 +1,6 @@
 package ch.hsr.hmienhanced;
 
 import android.Manifest;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -157,27 +156,23 @@ public class ARDiscoveryFragment extends ListFragment {
         getListView().setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                //TODO: Replace with Fragment logic
-                // launch the activity related to the type of discovery device service
-                Intent intent = null;
-
                 ARDiscoveryDeviceService service = (ARDiscoveryDeviceService) mAdapter.getItem(position);
                 ARDISCOVERY_PRODUCT_ENUM product = ARDiscoveryService.getProductFromProductID(service.getProductID());
 
                 switch (product) {
                     case ARDISCOVERY_PRODUCT_ARDRONE:
                     case ARDISCOVERY_PRODUCT_BEBOP_2:
-                        Toast.makeText(getActivity(), "Should start BEBOP drone...", Toast.LENGTH_LONG).show();
-//                        intent = new Intent(ARDiscoveryFragment.this, BebopActivity.class);
+                        Log.i(TAG, "onItemClick() -> Init MainFragment with selected AR drone");
+                        final MainFragment fragment = MainFragment.newInstance(service);
+
+                        getActivity().getSupportFragmentManager().beginTransaction()
+                                .replace(R.id.main_fragment_container, fragment)
+                                .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+                                .commit();
                         break;
 
                     default:
                         Log.e(TAG, "The type " + product + " is not supported yet.");
-                }
-
-                if (intent != null) {
-                    intent.putExtra(EXTRA_DEVICE_SERVICE, service);
-                    startActivity(intent);
                 }
             }
         });

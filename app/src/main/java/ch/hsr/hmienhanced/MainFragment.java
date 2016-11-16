@@ -11,6 +11,10 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceService;
+
+import ch.hsr.hmienhanced.ardrone.drone.BebopDrone;
+
 /**
  * Holds main UI like map and common drone controls.
  */
@@ -36,7 +40,15 @@ public class MainFragment extends Fragment {
      */
     private static final int UI_ANIMATION_DELAY = 300;
 
+    private static final String KEY_AR_DISCOVERY_DEVICE_SERVICE = "KEY_AR_DISCOVERY_DEVICE_SERVICE";
+
     private final Handler mHideHandler = new Handler();
+    private final Runnable mHideRunnable = new Runnable() {
+        @Override
+        public void run() {
+            hide();
+        }
+    };
     /**
      * Touch listener to use for in-layout UI controls to delay hiding the
      * system UI. This is to prevent the jarring behavior of controls going away
@@ -69,7 +81,6 @@ public class MainFragment extends Fragment {
                     | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
         }
     };
-
     private View mControlsView;
     private final Runnable mShowPart2Runnable = new Runnable() {
         @Override
@@ -78,12 +89,31 @@ public class MainFragment extends Fragment {
             mControlsView.setVisibility(View.VISIBLE);
         }
     };
-    private final Runnable mHideRunnable = new Runnable() {
-        @Override
-        public void run() {
-            hide();
-        }
-    };
+    private BebopDrone mDrone;
+
+    /**
+     * Factory method to create instance with given ARDiscoveryDeviceService
+     *
+     * @param service The ARDiscoveryDeviceService
+     * @return Object of Type {@link MainFragment}
+     */
+    protected static MainFragment newInstance(ARDiscoveryDeviceService service) {
+        Bundle bundle = new Bundle();
+        bundle.putParcelable(KEY_AR_DISCOVERY_DEVICE_SERVICE, service);
+
+        MainFragment fragment = new MainFragment();
+        fragment.setArguments(bundle);
+
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        ARDiscoveryDeviceService service = getArguments().getParcelable(KEY_AR_DISCOVERY_DEVICE_SERVICE);
+        mDrone = new BebopDrone(getActivity(), service);
+    }
 
     @Nullable
     @Override
@@ -120,6 +150,13 @@ public class MainFragment extends Fragment {
     private void delayedHide(int delayMillis) {
         mHideHandler.removeCallbacks(mHideRunnable);
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        //TODO: show video stream of mDrone
     }
 
     private void hide() {
