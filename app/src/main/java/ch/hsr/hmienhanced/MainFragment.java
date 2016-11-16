@@ -13,7 +13,7 @@ import android.view.ViewGroup;
 
 import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceService;
 
-import ch.hsr.hmienhanced.ardrone.drone.BebopDrone;
+import ch.hsr.hmienhanced.ardrone.BebopDrone;
 
 /**
  * Holds main UI like map and common drone controls.

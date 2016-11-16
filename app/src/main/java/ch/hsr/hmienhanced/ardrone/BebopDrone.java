@@ -1,4 +1,4 @@
-package ch.hsr.hmienhanced.ardrone.drone;
+package ch.hsr.hmienhanced.ardrone;
 
 import android.content.Context;
 import android.os.Handler;
@@ -27,14 +27,12 @@ import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceNetService;
 import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceService;
 import com.parrot.arsdk.ardiscovery.ARDiscoveryException;
 import com.parrot.arsdk.ardiscovery.ARDiscoveryService;
-import com.parrot.arsdk.arutils.ARUtilsException;
-import com.parrot.arsdk.arutils.ARUtilsManager;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class BebopDrone {
-    private static final String TAG = "BebopDrone";
+    private static final String TAG = BebopDrone.class.getSimpleName();
 
     public interface Listener {
         /**

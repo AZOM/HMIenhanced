@@ -35,8 +35,6 @@ import ch.hsr.hmienhanced.ardrone.DroneDiscoverer;
 
 public class ARDiscoveryFragment extends ListFragment {
 
-    public static final String EXTRA_DEVICE_SERVICE = "EXTRA_DEVICE_SERVICE";
-
     private static final String TAG = ARDiscoveryFragment.class.getSimpleName();
 
     /**
