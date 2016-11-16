@@ -6,8 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
 /**
- * An example full-screen activity that shows and hides the system UI (i.e.
- * status bar and navigation/system bar) with user interaction.
+ * Main activity that is responsible for showing the fragments in need.
  */
 public class MainActivity extends AppCompatActivity {
 
@@ -21,9 +20,9 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
-        Log.i(TAG, "onCreate() -> Loading MainFragment");
+        Log.i(TAG, "onCreate() -> Loading initial fragment");
         getSupportFragmentManager().beginTransaction()
-                .add(R.id.main_fragment_container, new MainFragment())
+                .add(R.id.main_fragment_container, new ARDiscoveryFragment())
                 .commit();
     }
 
