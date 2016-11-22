@@ -10,10 +10,17 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
+import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_MEDIARECORDEVENT_PICTUREEVENTCHANGED_ERROR_ENUM;
+import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM;
+import com.parrot.arsdk.arcontroller.ARCONTROLLER_DEVICE_STATE_ENUM;
+import com.parrot.arsdk.arcontroller.ARControllerCodec;
+import com.parrot.arsdk.arcontroller.ARFrame;
 import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceService;
 
 import ch.hsr.hmienhanced.ardrone.BebopDrone;
+import ch.hsr.hmienhanced.ardrone.BebopVideoView;
 
 /**
  * Holds main UI like map and common drone controls.
@@ -43,12 +50,6 @@ public class MainFragment extends Fragment {
     private static final String KEY_AR_DISCOVERY_DEVICE_SERVICE = "KEY_AR_DISCOVERY_DEVICE_SERVICE";
 
     private final Handler mHideHandler = new Handler();
-    private final Runnable mHideRunnable = new Runnable() {
-        @Override
-        public void run() {
-            hide();
-        }
-    };
     /**
      * Touch listener to use for in-layout UI controls to delay hiding the
      * system UI. This is to prevent the jarring behavior of controls going away
@@ -63,7 +64,65 @@ public class MainFragment extends Fragment {
             return false;
         }
     };
-    private View mContentView;
+    private BebopVideoView mVideoView;
+    private final BebopDrone.Listener mBebopListener = new BebopDrone.Listener() {
+
+        @Override
+        public void onDroneConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state) {
+            switch (state) {
+                case ARCONTROLLER_DEVICE_STATE_RUNNING:
+                    Toast.makeText(getActivity(), "Device: RUNNING", Toast.LENGTH_SHORT).show();
+                    break;
+
+                case ARCONTROLLER_DEVICE_STATE_STOPPED:
+                    Toast.makeText(getActivity(), "Device: STOPPED", Toast.LENGTH_SHORT).show();
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        @Override
+        public void onBatteryChargeChanged(int batteryPercentage) {
+            Log.i(TAG, "onBatteryChargeChanged() -> " + batteryPercentage + "%");
+        }
+
+        @Override
+        public void onPilotingStateChanged(ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM state) {
+            Log.i(TAG, "onPilotingStateChanged() -> state: " + state);
+        }
+
+        @Override
+        public void onPictureTaken(ARCOMMANDS_ARDRONE3_MEDIARECORDEVENT_PICTUREEVENTCHANGED_ERROR_ENUM error) {
+            Log.i(TAG, "onPictureTaken() -> Picture has been taken. (Error: " + error + ")");
+        }
+
+        @Override
+        public void configureDecoder(ARControllerCodec codec) {
+            mVideoView.configureDecoder(codec);
+        }
+
+        @Override
+        public void onFrameReceived(ARFrame frame) {
+            mVideoView.displayFrame(frame);
+        }
+
+        @Override
+        public void onMatchingMediasFound(int nbMedias) {
+            Log.i(TAG, "onMatchingMediasFound() -> nbMedias: " + nbMedias);
+        }
+
+        @Override
+        public void onDownloadProgressed(String mediaName, int progress) {
+            Log.i(TAG, "onDownloadProgressed() -> mediaName: " + mediaName + " | progress" + progress);
+        }
+
+        @Override
+        public void onDownloadComplete(String mediaName) {
+            Log.i(TAG, "onDownloadComplete() -> mediaName: " + mediaName);
+        }
+    };
     private final Runnable mHidePart2Runnable = new Runnable() {
         @SuppressLint("InlinedApi")
         @Override
@@ -73,7 +132,7 @@ public class MainFragment extends Fragment {
             // Note that some of these constants are new as of API 16 (Jelly Bean)
             // and API 19 (KitKat). It is safe to use them, as they are inlined
             // at compile-time and do nothing on earlier devices.
-            mContentView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
+            mVideoView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
                     | View.SYSTEM_UI_FLAG_FULLSCREEN
                     | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                     | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -87,6 +146,12 @@ public class MainFragment extends Fragment {
         public void run() {
             // Delayed display of UI elements
             mControlsView.setVisibility(View.VISIBLE);
+        }
+    };
+    private final Runnable mHideRunnable = new Runnable() {
+        @Override
+        public void run() {
+            hide();
         }
     };
     private BebopDrone mDrone;
@@ -112,7 +177,12 @@ public class MainFragment extends Fragment {
         super.onCreate(savedInstanceState);
 
         ARDiscoveryDeviceService service = getArguments().getParcelable(KEY_AR_DISCOVERY_DEVICE_SERVICE);
-        mDrone = new BebopDrone(getActivity(), service);
+        if (service != null) {
+            mDrone = new BebopDrone(getActivity(), service);
+            mDrone.addListener(mBebopListener);
+        } else {
+            Log.wtf(TAG, "onCreate() -> ARDiscoveryDeviceService from Arguments is null!");
+        }
     }
 
     @Nullable
@@ -121,8 +191,8 @@ public class MainFragment extends Fragment {
         Log.i(TAG, "onCreateView()");
         View view = inflater.inflate(R.layout.fragment_main, container, false);
 
+        mVideoView = (BebopVideoView) view.findViewById(R.id.fullscreen_videoView);
         mControlsView = view.findViewById(R.id.fullscreen_content_controls);
-        mContentView = view.findViewById(R.id.fullscreen_content);
 
         // Upon interacting with UI controls, delay any scheduled hide()
         // operations to prevent the jarring behavior of controls going away
@@ -156,7 +226,9 @@ public class MainFragment extends Fragment {
     public void onResume() {
         super.onResume();
 
-        //TODO: show video stream of mDrone
+        if (!mDrone.connect()) {
+            Log.e(TAG, "onResume() -> connection to drone failed!");
+        }
     }
 
     private void hide() {
@@ -170,7 +242,7 @@ public class MainFragment extends Fragment {
     @SuppressLint("InlinedApi")
     private void show() {
         // Show the system bar
-        mContentView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+        mVideoView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
 
         // Schedule a runnable to display UI elements after a delay
